@@ -17,3 +17,8 @@ rm $SRC/piwik-*.zip
 rm $(dirname $WEBROOT)/How*
 chown -R www-data:www-data $WEBROOT
 
+# configure apache
+a2dissite default
+a2ensite piwik
+a2enmod rewrite
+
