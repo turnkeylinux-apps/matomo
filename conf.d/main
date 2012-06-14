@@ -24,6 +24,7 @@ a2enmod rewrite
 
 # start services
 /etc/init.d/mysql start
+/etc/init.d/apache2 start
 
 # setup the database
 MYSQL_BATCH="mysql --user=root --password=$MYSQL_PASS --batch"
@@ -32,6 +33,27 @@ MYSQL_ADMIN="mysqladmin --user=root --password=$MYSQL_PASS"
 $MYSQL_ADMIN create $DB_NAME
 $MYSQL_BATCH --execute "grant all privileges on $DB_NAME.* to $DB_USER@localhost identified by '$DB_PASS'; flush privileges;"
 
+# curl based install
+EMAIL=$(echo $ADMIN_MAIL | sed s/@/%40/)
+URL="http://127.0.0.1/index.php?module=Installation&action="
+CURL="curl -c /tmp/cookie -b /tmp/cookie"
+
+$CURL http://127.0.0.1/index.php
+$CURL ${URL}systemCheck
+$CURL ${URL}databaseSetup
+$CURL ${URL}databaseSetup --data "host=127.0.0.1&username=$DB_USER&password=$DB_PASS&dbname=$DB_NAME&tables_prefix=piwik_&adapter=PDO_MYSQL&submit=Next+%C2%BB"
+$CURL ${URL}databaseCheck
+$CURL ${URL}tablesCreation
+$CURL ${URL}generalSetup
+$CURL ${URL}generalSetup --data "login=$ADMIN_NAME&password=$ADMIN_PASS&password_bis=$ADMIN_PASS&email=$EMAIL&submit=Next+%C2%BB"
+$CURL ${URL}firstWebsiteSetup
+$CURL ${URL}firstWebsiteSetup --data "siteName=Example&url=http%3A%2F%2Fexample.org&timezone=UTC&ecommerce=0&submit=Next+%C2%BB"
+$CURL ${URL}displayJavascriptCode
+$CURL ${URL}finished
+
+rm -f /tmp/cookie
+
 # stop services
 /etc/init.d/mysql stop
+/etc/init.d/apache2 stop
 
