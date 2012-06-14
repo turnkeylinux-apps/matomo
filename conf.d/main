@@ -53,6 +53,12 @@ $CURL ${URL}finished
 
 rm -f /tmp/cookie
 
+# configure mail and secure configuration file
+CONF=$WEBROOT/config/config.ini.php
+sed -i "s|\"piwik_\"|\"piwik_\"\n\n\[mail\]\ntransport = \"smtp\"\nhost = \"localhost\"\n|" $CONF
+
+chmod 640 $CONF
+
 # stop services
 /etc/init.d/mysql stop
 /etc/init.d/apache2 stop
