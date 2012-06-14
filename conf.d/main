@@ -11,3 +11,9 @@ ADMIN_MAIL=admin@example.com
 SRC=/usr/local/src
 WEBROOT=/var/www/piwik
 
+# unpack and set required permissions for inline upgrades
+unzip $SRC/piwik-*.zip -d $(dirname $WEBROOT)
+rm $SRC/piwik-*.zip
+rm $(dirname $WEBROOT)/How*
+chown -R www-data:www-data $WEBROOT
+
