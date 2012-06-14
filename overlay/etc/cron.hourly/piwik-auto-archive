@@ -1,0 +1,25 @@
+#!/bin/bash -e
+# auto-archive piwik reports (useful for medium to high traffic websites)
+#
+# the following changes should also be made:
+#
+# - piwik web inteface: settings -> general settings
+#   - Allow archiving to trigger when reports are viewed from the browser: No
+#   - Reports for today will be processed at most every: 3600 seconds
+#
+# - increase memory_limit to 512M in 
+#   - /etc/php5/cli/php.ini
+#   - /etc/php5/apache/php.ini
+# 
+# for more info see: http://piwik.org/setup-auto-archiving
+
+USER=www-data
+SCRIPT=/var/www/piwik/misc/cron/archive.php
+URL=http://127.0.0.1/
+LOGFILE=/var/log/piwik-auto-archive
+
+touch $LOGFILE
+chown $USER:$USER $LOGFILE
+
+su $USER -c "/usr/bin/php5 $SCRIPT --url=$URL >> $LOGFILE"
+
