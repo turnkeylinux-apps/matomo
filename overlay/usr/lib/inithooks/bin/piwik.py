@@ -9,14 +9,13 @@ Option:
 
 """
 
-import re
 import sys
 import getopt
 import hashlib
 
+import piwik_config
 from dialog_wrapper import Dialog
 from mysqlconf import MySQL
-from executil import system
 
 def usage(s=None):
     if s:
@@ -81,17 +80,8 @@ def main():
     m.execute('UPDATE piwik.piwik_option SET option_value=\"%s\" WHERE option_name=\"piwikUrl\";' % domain)
 
     hash = hashlib.md5(password).hexdigest()
-
-    config = "/var/www/piwik/config/config.ini.php"
-    s = file(config).read()
-    s = re.sub("email.*", "email = \"%s\"" % email, s)
-    s = re.sub("password.*", "password = \"%s\"" % hash, s, count=1)
-    file(config, "w").write(s)
-
-    # set ownership and permissions
-    system("chown www-data:www-data %s" % config)
-    system("chmod 640 %s" % config)
-
+    piwik_config.update("[superuser]", "email", email)
+    piwik_config.update("[superuser]", "password", hash)
 
 if __name__ == "__main__":
     main()
