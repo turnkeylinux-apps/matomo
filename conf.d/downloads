@@ -5,5 +5,5 @@ dl() {
     cd $2; curl -L -f -O $PROXY $1; cd -
 }
 
-dl http://builds.piwik.org/latest.zip /usr/local/src
+dl http://builds.piwik.org/piwik.zip /usr/local/src
 
