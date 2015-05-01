@@ -35,6 +35,7 @@ def main():
 
     password = ""
     email = ""
+    domain = ""
     for opt, val in opts:
         if opt in ('-h', '--help'):
             usage()
@@ -78,10 +79,13 @@ def main():
 
     m = MySQL()
     m.execute('UPDATE piwik.piwik_option SET option_value=\"%s\" WHERE option_name=\"piwikUrl\";' % domain)
+    piwik_config.update("[General]", "trusted_hosts[]", domain)
 
     hash = hashlib.md5(password).hexdigest()
-    piwik_config.update("[superuser]", "email", email)
-    piwik_config.update("[superuser]", "password", hash)
+    token = hashlib.md5('admin' + hash).hexdigest()
+
+    m.execute('UPDATE piwik.piwik_user SET password=\"%s\", token_auth=\"%s\" WHERE login = \"admin\" AND superuser_access = 1;' % (hash, token))
+    m.execute('UPDATE piwik.piwik_user SET email=\"%s\" WHERE login = \"admin\" AND superuser_access = 1;' % email)
 
 if __name__ == "__main__":
     main()
