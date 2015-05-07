@@ -12,8 +12,8 @@ SRC=/usr/local/src
 WEBROOT=/var/www/piwik
 
 # unpack and set required permissions for inline upgrades
-unzip $SRC/latest.zip -d $(dirname $WEBROOT)
-rm $SRC/latest.zip
+unzip $SRC/piwik.zip -d $(dirname $WEBROOT)
+rm $SRC/piwik.zip
 rm $(dirname $WEBROOT)/How*
 chown -R www-data:www-data $WEBROOT
 
@@ -38,26 +38,39 @@ EMAIL=$(echo $ADMIN_MAIL | sed s/@/%40/)
 URL="http://127.0.0.1/index.php?module=Installation&action="
 CURL="curl -c /tmp/cookie -b /tmp/cookie"
 
-$CURL http://127.0.0.1/index.php
+# HACK: work-around for Piwik being slow to get up
+sleep 5 || $CURL http://127.0.0.1/index.php
+
 $CURL ${URL}systemCheck
 $CURL ${URL}databaseSetup
-$CURL ${URL}databaseSetup --data "host=127.0.0.1&username=$DB_USER&password=$DB_PASS&dbname=$DB_NAME&tables_prefix=piwik_&adapter=PDO_MYSQL&submit=Next+%C2%BB"
+$CURL ${URL}databaseSetup --data "host=127.0.0.1&username=$DB_USER&password=$DB_PASS&dbname=$DB_NAME&tables_prefix=piwik_&adapter=PDO\\MYSQL&submit=Next+%C2%BB"
 $CURL ${URL}databaseCheck
 $CURL ${URL}tablesCreation
-$CURL ${URL}generalSetup
-$CURL ${URL}generalSetup --data "login=$ADMIN_NAME&password=$ADMIN_PASS&password_bis=$ADMIN_PASS&email=$EMAIL&submit=Next+%C2%BB"
+$CURL ${URL}setupSuperUser
+$CURL ${URL}setupSuperUser --data "login=$ADMIN_NAME&password=$ADMIN_PASS&password_bis=$ADMIN_PASS&email=$EMAIL&submit=Next+%C2%BB"
 $CURL ${URL}firstWebsiteSetup
 $CURL ${URL}firstWebsiteSetup --data "siteName=Example&url=http%3A%2F%2Fexample.org&timezone=UTC&ecommerce=0&submit=Next+%C2%BB"
-$CURL ${URL}displayJavascriptCode
+$CURL ${URL}trackingCode
+$CURL ${URL}trackingCode --data "site_idSite=1&site_name=Example"
 $CURL ${URL}finished
+$CURL ${URL}finished --data "site_idSite=1&site_name=Example"
 
 rm -f /tmp/cookie
 
 # configure mail and secure configuration file
+
 CONF=$WEBROOT/config/config.ini.php
-sed -i "s|\"piwik_\"|\"piwik_\"\n\n\[mail\]\ntransport = \"smtp\"\nhost = \"localhost\"\n|" $CONF
+
+cat >> $CONF << EOF
+[mail]
+transport = "smtp"
+host = "localhost"
+EOF
 
 chmod 640 $CONF
+
+# increase the memory limit
+sed -i 's|^\(memory_limit = \).*$|\1512M|' /etc/php5/apache2/php.ini
 
 # stop services
 /etc/init.d/mysql stop

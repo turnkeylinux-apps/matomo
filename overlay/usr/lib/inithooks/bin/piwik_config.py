@@ -31,6 +31,7 @@ def update(section, name, value):
 
     config_new = []
     in_section = False
+    seen = False
     for line in file(config_path).readlines():
         line = line.rstrip()
         if line.startswith("["):
@@ -39,8 +40,9 @@ def update(section, name, value):
             else:
                 in_section = False
 
-        if in_section and line.startswith("%s =" % name):
+        if in_section and line.startswith("%s =" % name) and seen == False:
             line = "%s = \"%s\"" % (name, value)
+            seen = True
 
         config_new.append(line)
 
