@@ -11,6 +11,7 @@ Option:
 
 import sys
 import getopt
+import inithooks_cache
 import hashlib
 
 import piwik_config
@@ -60,6 +61,8 @@ def main():
             "Piwik Email",
             "Enter email address for Piwik 'admin' account.",
             "admin@example.com")
+
+    inithooks_cache.write('APP_EMAIL', email)
 
     if not domain:
         if 'd' not in locals():
