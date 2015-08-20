@@ -12,6 +12,7 @@ Option:
 import sys
 import getopt
 import inithooks_cache
+
 import hashlib
 
 import piwik_config
@@ -75,6 +76,8 @@ def main():
 
     if domain == "DEFAULT":
         domain = DEFAULT_DOMAIN
+
+    inithooks_cache.write('APP_DOMAIN', domain)
 
     domain = domain.strip("/")
     if not domain.startswith("http://"):
