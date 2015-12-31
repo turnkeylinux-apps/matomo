@@ -9,13 +9,18 @@ ADMIN_PASS=turnkey
 ADMIN_MAIL=admin@example.com
 
 SRC=/usr/local/src
-WEBROOT=/var/www/piwik
+WEBROOT=/usr/share/piwik
 
-# unpack and set required permissions for inline upgrades
-unzip $SRC/piwik.zip -d $(dirname $WEBROOT)
-rm $SRC/piwik.zip
-rm $(dirname $WEBROOT)/How*
-chown -R www-data:www-data $WEBROOT
+cd $SRC
+wget https://debian.piwik.org/repository.gpg -qO piwik-repository.gpg
+sha256sum -c sha256 || exit 1
+
+cat piwik-repository.gpg | apt-key add -
+rm -f piwik-repository.gpg sha256
+cd -
+
+DEBIAN_FRONTEND=noninteractive apt-get update -y
+DEBIAN_FRONTEND=noninteractive apt-get install -y piwik
 
 # configure apache
 a2dissite 000-default
@@ -59,7 +64,7 @@ rm -f /tmp/cookie
 
 # configure mail and secure configuration file
 
-CONF=$WEBROOT/config/config.ini.php
+CONF=/etc/piwik/config.ini.php
 
 cat >> $CONF << EOF
 [mail]
