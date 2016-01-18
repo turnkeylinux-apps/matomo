@@ -1,5 +1,5 @@
-Piwik - Real-Time Web Analytics
-===============================
+Piwik - Self Hosted Real-Time Web Analytics
+===========================================
 
 `Piwik`_ is a free software alternative to Google Analytics that is
 already used on more than 320,000 websites. It provides you with
