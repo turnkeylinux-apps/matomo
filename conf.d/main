@@ -11,6 +11,17 @@ ADMIN_MAIL=admin@example.com
 SRC=/usr/local/src
 WEBROOT=/usr/share/piwik
 
+# setup pinning
+REPO_ORIGIN="debian.piwik.org"
+cat >/etc/apt/preferences.d/piwik<<EOF
+Package: *
+Pin: origin "$REPO_ORIGIN"
+Pin-Priority: 100
+Package: piwik
+Pin: origin "$REPO_ORIGIN"
+Pin-Priority: 500
+EOF
+
 cd $SRC
 wget https://debian.piwik.org/repository.gpg -qO piwik-repository.gpg
 sha256sum -c sha256 || exit 1
