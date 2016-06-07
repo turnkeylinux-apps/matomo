@@ -13,7 +13,7 @@ and on top of that:
 
 - Piwik configurations:
    
-   - Installed from upstream source code to /var/www/piwik
+   - Installed from debian package to /usr/share/piwik
 
 - SSL support out of the box.
 - `Adminer`_ administration frontend for MySQL (listening on port
