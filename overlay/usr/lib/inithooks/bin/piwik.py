@@ -14,6 +14,7 @@ import getopt
 import inithooks_cache
 
 import hashlib
+import bcrypt
 
 import piwik_config
 from dialog_wrapper import Dialog
@@ -87,10 +88,9 @@ def main():
     m.execute('UPDATE piwik.piwik_option SET option_value=\"%s\" WHERE option_name=\"piwikUrl\";' % domain)
     piwik_config.update("[General]", "trusted_hosts[]", domain)
 
-    hash = hashlib.md5(password).hexdigest()
-    token = hashlib.md5('admin' + hash).hexdigest()
+    hash = bcrypt.hashpw(hashlib.md5(password).hexdigest(), bcrypt.gensalt())
 
-    m.execute('UPDATE piwik.piwik_user SET password=\"%s\", token_auth=\"%s\" WHERE login = \"admin\" AND superuser_access = 1;' % (hash, token))
+    m.execute('UPDATE piwik.piwik_user SET password=\"%s\" WHERE login = \"admin\" AND superuser_access = 1;' % hash)
     m.execute('UPDATE piwik.piwik_user SET email=\"%s\" WHERE login = \"admin\" AND superuser_access = 1;' % email)
 
 if __name__ == "__main__":
