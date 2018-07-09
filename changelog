@@ -1,3 +1,23 @@
+turnkey-piwik-15.0 (1) turnkey; urgency=low
+
+  * 
+
+  * Install Adminer directly from stretch/main repo
+
+  * Provide "adminer" root-like user for Adminer MySQL access
+
+  * Replace MySQL with MariaDB (drop-in MySQL replacement)
+
+  * Updated version of mysqltuner script
+
+  * Includes PHP7.0 (installed from Debian repos)
+
+  * Updated PHP default settings
+
+  * Remove phpsh (no longer maintained)
+
+ -- Jeremy Davis <jeremy@turnkeylinux.org>  Mon, 09 Jul 2018 14:06:05 +1000
+
 turnkey-piwik-14.2 (1) turnkey; urgency=low
 
   * Piwik:

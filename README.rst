@@ -41,7 +41,8 @@ about new versions and security updates.
 Credentials *(passwords set at first boot)*
 -------------------------------------------
 
--  Webmin, SSH, MySQL, Adminer: username **root**
+-  Webmin, SSH, MySQL: username **root**
+-  Adminer: username **adminer**
 -  Piwik: username **admin**
 
 .. _Piwik: http://piwik.org/
