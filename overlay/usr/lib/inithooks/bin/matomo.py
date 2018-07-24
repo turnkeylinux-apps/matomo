@@ -16,7 +16,7 @@ import inithooks_cache
 import hashlib
 import bcrypt
 
-import piwik_config
+import matomo_config
 from dialog_wrapper import Dialog
 from mysqlconf import MySQL
 
@@ -85,13 +85,13 @@ def main():
         domain = "http://%s/" % domain
 
     m = MySQL()
-    m.execute('UPDATE piwik.piwik_option SET option_value=\"%s\" WHERE option_name=\"piwikUrl\";' % domain)
-    piwik_config.update("[General]", "trusted_hosts[]", domain)
+    m.execute('UPDATE matomo.matomo_option SET option_value=\"%s\" WHERE option_name=\"matomoUrl\";' % domain)
+    matomo_config.update("[General]", "trusted_hosts[]", domain)
 
     hash = bcrypt.hashpw(hashlib.md5(password).hexdigest(), bcrypt.gensalt())
 
-    m.execute('UPDATE piwik.piwik_user SET password=\"%s\" WHERE login = \"admin\" AND superuser_access = 1;' % hash)
-    m.execute('UPDATE piwik.piwik_user SET email=\"%s\" WHERE login = \"admin\" AND superuser_access = 1;' % email)
+    m.execute('UPDATE matomo.matomo_user SET password=\"%s\" WHERE login = \"admin\" AND superuser_access = 1;' % hash)
+    m.execute('UPDATE matomo.matomo_user SET email=\"%s\" WHERE login = \"admin\" AND superuser_access = 1;' % email)
 
 if __name__ == "__main__":
     main()

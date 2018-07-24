@@ -1,8 +1,0 @@
-#!/bin/bash -e
-# set piwik admin password, email and domain
-
-. /etc/default/inithooks
-
-[ -e $INITHOOKS_CONF ] && . $INITHOOKS_CONF
-$INITHOOKS_PATH/bin/piwik.py --pass="$APP_PASS" --email="$APP_EMAIL" --domain="$APP_DOMAIN"
-
