@@ -8,8 +8,8 @@
 #   - Reports for today will be processed at most every: 3600 seconds
 #
 # - increase memory_limit to 512M in 
-#   - /etc/php5/cli/php.ini
-#   - /etc/php5/apache/php.ini
+#   - /etc/php/7.0/cli/php.ini
+#   - /etc/php/7.0/apache/php.ini
 # 
 # for more info see: http://matomo.org/setup-auto-archiving
 
@@ -21,5 +21,5 @@ LOGFILE=/var/log/matomo-auto-archive
 touch $LOGFILE
 chown $USER:$USER $LOGFILE
 
-su $USER -c "/usr/bin/php5 $SCRIPT --url=$URL >> $LOGFILE"
+su $USER -c "/usr/bin/php $SCRIPT --url=$URL >> $LOGFILE"
 
