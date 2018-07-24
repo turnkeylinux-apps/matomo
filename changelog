@@ -1,6 +1,8 @@
 turnkey-piwik-15.0 (1) turnkey; urgency=low
 
-  * 
+  * Updated Matomo to latest stable from matomo debian repo.
+
+  * Piwik renamed Matomo
 
   * Install Adminer directly from stretch/main repo
 
@@ -16,7 +18,7 @@ turnkey-piwik-15.0 (1) turnkey; urgency=low
 
   * Remove phpsh (no longer maintained)
 
- -- Jeremy Davis <jeremy@turnkeylinux.org>  Mon, 09 Jul 2018 14:06:05 +1000
+ -- Stefan Davis <stefan@turnkeylinux.org>  Tue, 24 Jul 2018 10:29:28 +1000
 
 turnkey-piwik-14.2 (1) turnkey; urgency=low
 
