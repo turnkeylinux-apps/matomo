@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Update Piwik configuration settings
+"""Update Matomo configuration settings
 
 Arguments:
     section    section header (e.g., [database])
