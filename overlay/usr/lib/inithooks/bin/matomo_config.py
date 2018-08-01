@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Update Piwik configuration settings
+"""Update Matomo configuration settings
 
 Arguments:
     section    section header (e.g., [database])
@@ -25,7 +25,7 @@ def usage(e=None):
     sys.exit(1)
 
 def update(section, name, value):
-    config_path = "/etc/piwik/config.ini.php"
+    config_path = "/etc/matomo/config.ini.php"
     if not os.path.exists(config_path):
         raise Error("config file does not exist: %s" % config_path)
 

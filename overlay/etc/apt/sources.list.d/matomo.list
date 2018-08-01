@@ -1,0 +1,2 @@
+deb [signed-by=/usr/share/keyrings/matomo-repository.gpg] http://debian.matomo.org/ piwik main
+deb-src [signed-by=/usr/share/keyrings/matomo-repository.gpg] http://debian.matomo.org/ piwik main

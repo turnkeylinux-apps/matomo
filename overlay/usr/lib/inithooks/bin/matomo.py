@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Set Piwik admin password, email and domain
+"""Set Matomo admin password, email and domain
 
 Option:
     --pass=     unless provided, will ask interactively
@@ -16,7 +16,7 @@ import inithooks_cache
 import hashlib
 import bcrypt
 
-import piwik_config
+import matomo_config
 from dialog_wrapper import Dialog
 from mysqlconf import MySQL
 
@@ -52,16 +52,16 @@ def main():
     if not password:
         d = Dialog('TurnKey Linux - First boot configuration')
         password = d.get_password(
-            "Piwik Password",
-            "Enter new password for the Piwik 'admin' account.")
+            "Matomo Password",
+            "Enter new password for the Matomo 'admin' account.")
 
     if not email:
         if 'd' not in locals():
             d = Dialog('TurnKey Linux - First boot configuration')
 
         email = d.get_email(
-            "Piwik Email",
-            "Enter email address for Piwik 'admin' account.",
+            "Matomo Email",
+            "Enter email address for Matomo 'admin' account.",
             "admin@example.com")
 
     inithooks_cache.write('APP_EMAIL', email)
@@ -71,8 +71,8 @@ def main():
             d = Dialog('TurnKey Linux - First boot configuration')
 
         domain = d.get_input(
-            "Piwik Domain",
-            "Enter the domain to serve Piwik.",
+            "Matomo Domain",
+            "Enter the domain to serve Matomo.",
             DEFAULT_DOMAIN)
 
     if domain == "DEFAULT":
@@ -85,13 +85,13 @@ def main():
         domain = "http://%s/" % domain
 
     m = MySQL()
-    m.execute('UPDATE piwik.piwik_option SET option_value=\"%s\" WHERE option_name=\"piwikUrl\";' % domain)
-    piwik_config.update("[General]", "trusted_hosts[]", domain)
+    m.execute('UPDATE matomo.matomo_option SET option_value=\"%s\" WHERE option_name=\"matomoUrl\";' % domain)
+    matomo_config.update("[General]", "trusted_hosts[]", domain)
 
     hash = bcrypt.hashpw(hashlib.md5(password).hexdigest(), bcrypt.gensalt())
 
-    m.execute('UPDATE piwik.piwik_user SET password=\"%s\" WHERE login = \"admin\" AND superuser_access = 1;' % hash)
-    m.execute('UPDATE piwik.piwik_user SET email=\"%s\" WHERE login = \"admin\" AND superuser_access = 1;' % email)
+    m.execute('UPDATE matomo.matomo_user SET password=\"%s\" WHERE login = \"admin\" AND superuser_access = 1;' % hash)
+    m.execute('UPDATE matomo.matomo_user SET email=\"%s\" WHERE login = \"admin\" AND superuser_access = 1;' % email)
 
 if __name__ == "__main__":
     main()
