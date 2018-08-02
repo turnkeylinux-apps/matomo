@@ -1,4 +1,4 @@
-turnkey-piwik-15.0 (1) turnkey; urgency=low
+turnkey-matomo-15.0 (1) turnkey; urgency=low
 
   * Updated Matomo to latest stable from matomo debian repo.
 
