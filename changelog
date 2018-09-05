@@ -18,7 +18,10 @@ turnkey-matomo-15.0 (1) turnkey; urgency=low
 
   * Remove phpsh (no longer maintained)
 
- -- Stefan Davis <stefan@turnkeylinux.org>  Tue, 24 Jul 2018 10:29:28 +1000
+  * Note: Please refer to turnkey-core's changelog for changes common to all
+    appliances. Here we only describe changes specific to this appliance
+
+ -- Stefan Davis <stefan@turnkeylinux.org>  Tue, 28 Aug 2018 10:29:28 +1000
 
 turnkey-piwik-14.2 (1) turnkey; urgency=low
 
