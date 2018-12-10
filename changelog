@@ -1,5 +1,7 @@
 turnkey-matomo-15.1 (1) turnkey; urgency=low
 
+  * Install latest Matomo pacakge from upstream repo (3.6.1).
+
   * Rebuild to resolve inadvertent removal of mariadb during sec-updates
     - part of #1246.
 
