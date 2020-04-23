@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 """Update Matomo configuration settings
 
 Arguments:
@@ -11,17 +11,16 @@ Arguments:
 import os
 import sys
 import getopt
-
-from executil import system
+import subprocess
 
 class Error(Exception):
     pass
 
 def usage(e=None):
     if e:
-        print >> sys.stderr, "Error:", e
-    print >> sys.stderr, "Syntax: %s [options] section name value" % sys.argv[0]
-    print >> sys.stderr, __doc__
+        print("Error:", e, file=sys.stderr)
+    print("Syntax: %s [options] section name value" % sys.argv[0], file=sys.stderr)
+    print(__doc__, file=sys.stderr)
     sys.exit(1)
 
 def update(section, name, value):
@@ -32,31 +31,33 @@ def update(section, name, value):
     config_new = []
     in_section = False
     seen = False
-    for line in file(config_path).readlines():
-        line = line.rstrip()
-        if line.startswith("["):
-            if line == section:
-                in_section = True
-            else:
-                in_section = False
+    with open(config_path, 'r') as fob:
+        for line in fob:
+            line = line.rstrip()
+            if line.startswith("["):
+                if line == section:
+                    in_section = True
+                else:
+                    in_section = False
 
-        if in_section and line.startswith("%s =" % name) and seen == False:
-            line = "%s = \"%s\"" % (name, value)
-            seen = True
+            if in_section and line.startswith("%s =" % name) and seen == False:
+                line = "%s = \"%s\"" % (name, value)
+                seen = True
 
-        config_new.append(line)
+            config_new.append(line)
 
     # write out updated config
-    file(config_path, "w").write("\n".join(config_new) + "\n")
+    with open(config_path, 'w') as fob:
+        fob.write("\n".join(config_new) + "\n")
 
     # set ownership and permissions
-    system("chown www-data:www-data %s" % config_path)
-    system("chmod 640 %s" % config_path)
+    subprocess.run(["chown", "www-data:www-data", config_path])
+    subprocess.run(["chmod", "640", config_path])
 
 def main():
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], "h", ['help'])
-    except getopt.GetoptError, e:
+    except getopt.GetoptError as e:
         usage(e)
 
     for opt, val in opts:
