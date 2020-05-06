@@ -9,5 +9,5 @@ php-xml
 
 unzip
 
-python-bcrypt
+python3-bcrypt
 

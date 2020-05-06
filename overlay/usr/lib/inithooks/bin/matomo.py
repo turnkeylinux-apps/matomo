@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 """Set Matomo admin password, email and domain
 
 Option:
@@ -22,9 +22,9 @@ from mysqlconf import MySQL
 
 def usage(s=None):
     if s:
-        print >> sys.stderr, "Error:", s
-    print >> sys.stderr, "Syntax: %s [options]" % sys.argv[0]
-    print >> sys.stderr, __doc__
+        print("Error:", s, file=sys.stderr)
+    print("Syntax: %s [options]" % sys.argv[0], file=sys.stderr)
+    print(__doc__, file=sys.stderr)
     sys.exit(1)
 
 DEFAULT_DOMAIN="www.example.com"
@@ -33,7 +33,7 @@ def main():
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], "h",
                                        ['help', 'pass=', 'email=', 'domain='])
-    except getopt.GetoptError, e:
+    except getopt.GetoptError as e:
         usage(e)
 
     password = ""
@@ -85,13 +85,15 @@ def main():
         domain = "http://%s/" % domain
 
     m = MySQL()
-    m.execute('UPDATE matomo.matomo_option SET option_value=\"%s\" WHERE option_name=\"matomoUrl\";' % domain)
+    m.execute('UPDATE matomo.matomo_option SET option_value=%s WHERE option_name=\"matomoUrl\";', (domain,))
     matomo_config.update("[General]", "trusted_hosts[]", domain)
 
-    hash = bcrypt.hashpw(hashlib.md5(password).hexdigest(), bcrypt.gensalt())
+    hash = bcrypt.hashpw(
+            hashlib.md5(password.encode('utf8')).hexdigest().encode('utf8'),
+            bcrypt.gensalt()).decode('utf8')
 
-    m.execute('UPDATE matomo.matomo_user SET password=\"%s\" WHERE login = \"admin\" AND superuser_access = 1;' % hash)
-    m.execute('UPDATE matomo.matomo_user SET email=\"%s\" WHERE login = \"admin\" AND superuser_access = 1;' % email)
+    m.execute('UPDATE matomo.matomo_user SET password=%s WHERE login = \"admin\" AND superuser_access = 1;', (hash,))
+    m.execute('UPDATE matomo.matomo_user SET email=%s WHERE login = \"admin\" AND superuser_access = 1;', (email,))
 
 if __name__ == "__main__":
     main()
