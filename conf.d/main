@@ -8,26 +8,14 @@ ADMIN_NAME=admin
 ADMIN_PASS=turnkey
 ADMIN_MAIL=admin@example.com
 
-WEBROOT=/usr/share/matomo
+WEBROOT=/var/www/matomo
 
-# setup pinning
-REPO_DOMAIN="debian.matomo.org"
-cat >/etc/apt/preferences.d/matomo<<EOF
-Package: *
-Pin: origin "$REPO_DOMAIN"
-Pin-Priority: 100
-
-Package: matomo
-Pin: origin "$REPO_DOMAIN"
-Pin-Priority: 500
-
-EOF
-
-DEBIAN_FRONTEND=noninteractive apt-get update -y
-DEBIAN_FRONTEND=noninteractive apt-get install -y matomo
+cd /var/www
+unzip matomo-latest.zip
 
 # configure apache
 a2dissite 000-default
+a2enmod headers
 a2ensite matomo
 a2enmod rewrite
 
@@ -68,7 +56,7 @@ rm -f /tmp/cookie
 
 # configure mail and secure configuration file
 
-CONF=/etc/matomo/config.ini.php
+CONF=/var/www/matomo/config/global.ini.php
 
 sed -i '/^\[General\]$/a \
 enable_trusted_host_check = 0' $CONF
@@ -82,7 +70,7 @@ EOF
 chmod 640 $CONF
 
 # increase the memory limit
-sed -i 's|^\(memory_limit = \).*$|\1512M|' /etc/php/7.3/apache2/php.ini
+sed -i 's|^\(memory_limit = \).*$|\1512M|' /etc/php/7.4/apache2/php.ini
 
 # stop services
 service mysql stop

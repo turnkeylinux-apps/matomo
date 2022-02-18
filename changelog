@@ -1,3 +1,14 @@
+turnkey-matomo-17.0 (1) turnkey; urgency=low
+
+  * Move Matomo install to using official mirror instead of Debian package.
+
+  * Install latest Matomo version - 4.7.1.
+
+  * Note: Please refer to turnkey-core's 17.0 changelog for changes common to all
+    appliances. Here we only describe changes specific to this appliance
+
+ -- Zhenya Hvorostian <zhenya@turnkeylinux>  Sat, 19 Feb 2022 01:18:30 +0300
+
 turnkey-matomo-16.1 (1) turnkey; urgency=low
 
   * Install latest Matomo package from upstream repo - 3.14.1.
