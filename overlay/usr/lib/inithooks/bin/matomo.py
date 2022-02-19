@@ -11,13 +11,13 @@ Option:
 
 import sys
 import getopt
-import inithooks_cache
+from libinithooks import inithooks_cache
 
 import hashlib
 import bcrypt
 
 import matomo_config
-from dialog_wrapper import Dialog
+from libinithooks.dialog_wrapper import Dialog
 from mysqlconf import MySQL
 
 def usage(s=None):

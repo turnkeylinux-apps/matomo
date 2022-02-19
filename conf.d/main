@@ -8,26 +8,14 @@ ADMIN_NAME=admin
 ADMIN_PASS=turnkey
 ADMIN_MAIL=admin@example.com
 
-WEBROOT=/usr/share/matomo
+WEBROOT=/var/www/matomo
 
-# setup pinning
-REPO_DOMAIN="debian.matomo.org"
-cat >/etc/apt/preferences.d/matomo<<EOF
-Package: *
-Pin: origin "$REPO_DOMAIN"
-Pin-Priority: 100
-
-Package: matomo
-Pin: origin "$REPO_DOMAIN"
-Pin-Priority: 500
-
-EOF
-
-DEBIAN_FRONTEND=noninteractive apt-get update -y
-DEBIAN_FRONTEND=noninteractive apt-get install -y matomo
+cd /var/www
+unzip matomo-latest.zip
 
 # configure apache
 a2dissite 000-default
+a2enmod headers
 a2ensite matomo
 a2enmod rewrite
 
@@ -39,8 +27,13 @@ service apache2 start
 MYSQL_BATCH="mysql --user=root --password=$MYSQL_PASS --batch"
 MYSQL_ADMIN="mysqladmin --user=root --password=$MYSQL_PASS"
 
+chown -R www-data:www-data /var/www/matomo
+find /var/www/matomo/tmp -type f -exec chmod 644 {} \;
+find /var/www/matomo/tmp -type d -exec chmod 755 {} \;
+
 $MYSQL_ADMIN create $DB_NAME
 $MYSQL_BATCH --execute "grant all privileges on $DB_NAME.* to $DB_USER@localhost identified by '$DB_PASS'; flush privileges;"
+$MYSQL_ADMIN --execute "SET GLOBAL max_allowed_packet=268435456;" # 256 MB
 
 # curl based install
 EMAIL=$(echo $ADMIN_MAIL | sed s/@/%40/)
@@ -48,7 +41,7 @@ URL="http://127.0.0.1/index.php?module=Installation&action="
 CURL="curl -c /tmp/cookie -b /tmp/cookie"
 
 # HACK: work-around for Piwik being slow to get up
-sleep 5 || $CURL http://127.0.0.1/index.php
+# sleep 5 || $CURL http://127.0.0.1/index.php
 
 $CURL ${URL}systemCheck
 $CURL ${URL}databaseSetup
@@ -67,11 +60,14 @@ $CURL ${URL}finished --data "site_idSite=1&site_name=Example"
 rm -f /tmp/cookie
 
 # configure mail and secure configuration file
-
-CONF=/etc/matomo/config.ini.php
+CONF=/var/www/matomo/config/config.ini.php
 
 sed -i '/^\[General\]$/a \
 enable_trusted_host_check = 0' $CONF
+
+sed -i '/^\[General\]$/a \
+force_ssl = 1' $CONF
+
 
 cat >> $CONF << EOF
 [mail]
@@ -82,7 +78,7 @@ EOF
 chmod 640 $CONF
 
 # increase the memory limit
-sed -i 's|^\(memory_limit = \).*$|\1512M|' /etc/php/7.3/apache2/php.ini
+sed -i 's|^\(memory_limit = \).*$|\1512M|' /etc/php/7.4/apache2/php.ini
 
 # stop services
 service mysql stop
