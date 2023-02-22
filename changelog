@@ -1,4 +1,4 @@
-turnkey-matomo-16.2 (1) turnkey; urgency=low
+turnkey-matomo-17.0 (1) turnkey; urgency=low
 
   * Install latest Matomo package from upstream repo - 4.13.3.
 
