@@ -76,9 +76,6 @@ EOF
 
 chmod 640 $CONF
 
-# increase the memory limit
-sed -i 's|^\(memory_limit = \).*$|\1512M|' /etc/php/7.4/apache2/php.ini
-
 # stop services
 service mysql stop
 service apache2 stop
