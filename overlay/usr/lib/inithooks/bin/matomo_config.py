@@ -41,6 +41,9 @@ def update(section, name, value):
                     in_section = False
 
             if in_section and line.startswith("%s =" % name) and seen == False:
+                # first 'trusted_hosts' entry is localhost and should remain
+                if name == "trusted_hosts" and '127.0.0.1' in line:
+                    continue
                 line = "%s = \"%s\"" % (name, value)
                 seen = True
 
@@ -73,4 +76,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
