@@ -11,12 +11,12 @@ Option:
 
 import sys
 import getopt
-from libinithooks import inithooks_cache
-
 import hashlib
 import bcrypt
+import subprocess
 
 import matomo_config
+from libinithooks import inithooks_cache
 from libinithooks.dialog_wrapper import Dialog
 from mysqlconf import MySQL
 
@@ -81,12 +81,21 @@ def main():
     inithooks_cache.write('APP_DOMAIN', domain)
 
     domain = domain.strip("/")
-    if not domain.startswith("http://"):
-        domain = "http://%s/" % domain
+    if domain.startswith("http://"):
+        url = domain
+        domain = domain[7:]
+    if domain.startswith("https://"):
+        url = domain
+        domain = domain[8:]
+    else:
+        url = f"https://{domain}"
 
     m = MySQL()
-    m.execute('UPDATE matomo.matomo_option SET option_value=%s WHERE option_name=\"matomoUrl\";', (domain,))
+    m.execute('UPDATE matomo.matomo_option SET option_value=%s WHERE option_name=\"matomoUrl\";', (url,))
     matomo_config.update("[General]", "trusted_hosts[]", domain)
+    subprocess.run(['sed', '-i',
+                    f's|--url=[a-zA-Z0-9:/\.-]* |--url={url}/ |',
+                    '/etc/cron.d/matomo-archive'])
 
     hash = bcrypt.hashpw(
             hashlib.md5(password.encode('utf8')).hexdigest().encode('utf8'),
@@ -97,4 +106,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
