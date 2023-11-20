@@ -26,12 +26,19 @@ service apache2 start
 # setup the database
 MYSQL_BATCH="mysql --batch --execute"
 
+# hit cron job to download geoIP db
+/etc/cron.monthly/geo-ip-update
+
 chown -R www-data:www-data /var/www/matomo
 find /var/www/matomo/tmp -type f -exec chmod 644 {} \;
 find /var/www/matomo/tmp -type d -exec chmod 755 {} \;
 
 mysqladmin create $DB_NAME
 $MYSQL_BATCH "grant all privileges on $DB_NAME.* to $DB_USER@localhost identified by '$DB_PASS'; flush privileges;"
+# disable browser based cron - not required when cron job enabled
+$MYSQL_BATCH "UPDATE matomo.matomo_option SET option_value=0 WHERE option_name='enableBrowserTriggerArchiving';"
+# enable PHP GeoIP2
+$MYSQL_BATCH "UPDATE matomo.matomo_option SET option_value='geoip2php' WHERE option_name='usercountry.location_provider';"
 
 # curl based install
 EMAIL=$(echo $ADMIN_MAIL | sed s/@/%40/)
