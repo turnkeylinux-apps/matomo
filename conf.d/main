@@ -48,9 +48,6 @@ EMAIL=$(echo $ADMIN_MAIL | sed s/@/%40/)
 URL="http://127.0.0.1/index.php?module=Installation&action="
 CURL="curl -c /tmp/cookie -b /tmp/cookie"
 
-# HACK: work-around for Piwik being slow to get up
-# sleep 5 || $CURL http://127.0.0.1/index.php
-
 $CURL ${URL}systemCheck
 $CURL ${URL}databaseSetup
 $CURL ${URL}databaseSetup --data "host=127.0.0.1&username=$DB_USER&password=$DB_PASS&dbname=$DB_NAME&tables_prefix=matomo_&adapter=PDO\\MYSQL&submit=Next+%C2%BB"
