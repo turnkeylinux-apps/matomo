@@ -29,6 +29,9 @@ MYSQL_BATCH="mysql --batch --execute"
 # hit cron job to download geoIP db
 /etc/cron.monthly/geo-ip-update
 
+# tweak mod_evasive to ensure that Matomo admin page(s) are accessible by default
+sed '\|DOSPageCount| s|#||; \|DOSPageCount| s|[0-9]*$|5|' apache2/mods-available/evasive.conf
+
 chown -R www-data:www-data /var/www/matomo
 find /var/www/matomo/tmp -type f -exec chmod 644 {} \;
 find /var/www/matomo/tmp -type d -exec chmod 755 {} \;
