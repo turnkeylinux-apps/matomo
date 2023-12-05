@@ -79,10 +79,10 @@ EOF
 chmod 640 $CONF
 
 # disable browser based cron - not required when cron job enabled
-$MYSQL_BATCH "UPDATE matomo.matomo_option SET option_value=0 WHERE option_name='enableBrowserTriggerArchiving';"
+$MYSQL_BATCH "INSERT INTO matomo.matomo_option (option_name,option_value,autoload) values ('enableBrowserTriggerArchiving',0,1)";
 
 # enable PHP GeoIP2
-$MYSQL_BATCH "UPDATE matomo.matomo_option SET option_value='geoip2php' WHERE option_name='usercountry.location_provider';"
+$MYSQL_BATCH "INSERT INTO matomo.matomo_option (option_name,option_value,autoload) values ('usercountry.location_provider','geoip2php',1)";
 
 # ensure that cron log dir exists and has correct permissions
 mkdir -p /var/log/matomo

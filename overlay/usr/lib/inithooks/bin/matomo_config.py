@@ -42,7 +42,8 @@ def update(section, name, value):
 
             if in_section and line.startswith(f"{name} =") and seen == False:
                 # first 'trusted_hosts' entry is localhost and should remain
-                if name != "trusted_hosts[]" and '127.0.0.1' in line:
+
+                if name != "trusted_hosts[]" or '127.0.0.1' not in line:
                     line = f'{name} = "{value}"'
                     seen = True
 
