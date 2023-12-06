@@ -1,0 +1,1 @@
+5 * * * * www-data /usr/bin/php /var/www/matomo/console core:archive --url=https://www.example.com/ > /var/log/matomo/archive.log 2> /var/log/matomo/error.log

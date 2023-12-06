@@ -26,21 +26,23 @@ service apache2 start
 # setup the database
 MYSQL_BATCH="mysql --batch --execute"
 
+# hit cron job to download geoIP db
+/etc/cron.monthly/geo-ip-update
+
+# tweak mod_evasive to ensure that Matomo admin page(s) are accessible by default
+sed -i '\|DOSPageCount| s|#||; \|DOSPageCount| s|[0-9]*$|5|' /etc/apache2/mods-available/evasive.conf
+
 chown -R www-data:www-data /var/www/matomo
 find /var/www/matomo/tmp -type f -exec chmod 644 {} \;
 find /var/www/matomo/tmp -type d -exec chmod 755 {} \;
 
 mysqladmin create $DB_NAME
 $MYSQL_BATCH "grant all privileges on $DB_NAME.* to $DB_USER@localhost identified by '$DB_PASS'; flush privileges;"
-$MYSQL_BATCH "SET GLOBAL max_allowed_packet=268435456;" # 256 MB
 
 # curl based install
 EMAIL=$(echo $ADMIN_MAIL | sed s/@/%40/)
 URL="http://127.0.0.1/index.php?module=Installation&action="
 CURL="curl -c /tmp/cookie -b /tmp/cookie"
-
-# HACK: work-around for Piwik being slow to get up
-# sleep 5 || $CURL http://127.0.0.1/index.php
 
 $CURL ${URL}systemCheck
 $CURL ${URL}databaseSetup
@@ -76,8 +78,15 @@ EOF
 
 chmod 640 $CONF
 
-# increase the memory limit
-sed -i 's|^\(memory_limit = \).*$|\1512M|' /etc/php/7.4/apache2/php.ini
+# disable browser based cron - not required when cron job enabled
+$MYSQL_BATCH "INSERT INTO matomo.matomo_option (option_name,option_value,autoload) values ('enableBrowserTriggerArchiving',0,1)";
+
+# enable PHP GeoIP2
+$MYSQL_BATCH "INSERT INTO matomo.matomo_option (option_name,option_value,autoload) values ('usercountry.location_provider','geoip2php',1)";
+
+# ensure that cron log dir exists and has correct permissions
+mkdir -p /var/log/matomo
+chown www-data:www-data /var/log/matomo
 
 # stop services
 service mysql stop

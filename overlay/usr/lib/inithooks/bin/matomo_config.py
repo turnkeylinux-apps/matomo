@@ -19,14 +19,14 @@ class Error(Exception):
 def usage(e=None):
     if e:
         print("Error:", e, file=sys.stderr)
-    print("Syntax: %s [options] section name value" % sys.argv[0], file=sys.stderr)
+    print(f"Syntax: {sys.argv[0]} [options] section name value", file=sys.stderr)
     print(__doc__, file=sys.stderr)
     sys.exit(1)
 
 def update(section, name, value):
     config_path = "/var/www/matomo/config/config.ini.php"
     if not os.path.exists(config_path):
-        raise Error("config file does not exist: %s" % config_path)
+        raise Error(f"config file does not exist: {config_path}")
 
     config_new = []
     in_section = False
@@ -40,9 +40,12 @@ def update(section, name, value):
                 else:
                     in_section = False
 
-            if in_section and line.startswith("%s =" % name) and seen == False:
-                line = "%s = \"%s\"" % (name, value)
-                seen = True
+            if in_section and line.startswith(f"{name} =") and seen == False:
+                # first 'trusted_hosts' entry is localhost and should remain
+
+                if name != "trusted_hosts[]" or '127.0.0.1' not in line:
+                    line = f'{name} = "{value}"'
+                    seen = True
 
             config_new.append(line)
 
@@ -73,4 +76,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

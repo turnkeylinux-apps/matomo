@@ -6,8 +6,8 @@ php-cli
 php-curl
 php-mbstring
 php-xml
+php-maxminddb   /* For GeoIP */
 
 unzip
 
 python3-bcrypt
-
