@@ -12,9 +12,10 @@ This appliance includes all the standard features in `TurnKey Core`_,
 and on top of that:
 
 - Matomo configurations:
-   
-   - Installed from official Matomo debian package archive (to 
-     /usr/share/matomo)
+
+   - Matomo 5.13.0 is installed from the official upstream release archive
+     to ``/var/www/matomo``. The archive SHA-256 published in the upstream
+     GitHub release metadata is verified during the build.
 
      **Security note**: Updates to Matomo may require supervision
      so they **ARE NOT** configured to install automatically. See
@@ -30,10 +31,13 @@ and on top of that:
 Supervised Manual Matomo Update
 -------------------------------
 
-To upgrade to the latest version of Matomo from the command line::
+Back up Matomo and its database, then follow the upstream `manual update
+guide`_.
+Download the next official release archive and verify its published digest
+before replacing the application files. Preserve ``config/config.ini.php``,
+then apply any database changes from the Matomo directory::
 
-    apt-get update
-    apt-get install matomo
+    sudo -u www-data php console core:update --yes
 
 We recommend subscribing to the `Matomo changelog`_ to be notified 
 about new versions and security updates. 
@@ -49,4 +53,4 @@ Credentials *(passwords set at first boot)*
 .. _TurnKey Core: https://www.turnkeylinux.org/core
 .. _Adminer: https://www.adminer.org/
 .. _Matomo changelog: https://matomo.org/changelog/
-
+.. _manual update guide: https://matomo.org/docs/update/

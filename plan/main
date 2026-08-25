@@ -4,8 +4,10 @@
 php-gd
 php-cli
 php-curl
+php-intl
 php-mbstring
 php-xml
+php-zip
 php-maxminddb   /* For GeoIP */
 
 unzip
