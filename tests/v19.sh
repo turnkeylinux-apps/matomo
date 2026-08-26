@@ -9,9 +9,10 @@ cookies=/tmp/tkl-matomo-cookies.$$
 page=/tmp/tkl-matomo-page.$$
 headers=/tmp/tkl-matomo-headers.$$
 release=/tmp/tkl-matomo-release.$$
+report=/tmp/tkl-matomo-report.$$
 
 cleanup() {
-    rm -f -- "$cookies" "$page" "$headers" "$release"
+    rm -f -- "$cookies" "$page" "$headers" "$release" "$report"
 }
 trap cleanup EXIT
 trap 'printf "test_failure line=%s status=%s command=%q\n" "$LINENO" "$?" "$BASH_COMMAND" >&2' ERR
@@ -60,8 +61,9 @@ curl --insecure --fail --silent --show-error --location \
 grep -Fq 'piwik.userLogin = "admin";' "$page"
 grep -Fq 'title="Sign out"' "$page"
 
-# Submit an identity-defining analytics event through Matomo's tracker and
-# read it from Matomo's own analytics tables before and after service restart.
+# Submit an identity-defining analytics event through Matomo's tracker, run
+# the scheduled archiver as its configured user, and require the resulting
+# page title through Matomo's authenticated Reporting API.
 title="TurnKey Matomo acceptance $$"
 curl --insecure --fail --silent --show-error --get \
     "$base/matomo.php" \
@@ -76,6 +78,38 @@ event_count() {
         "SELECT COUNT(*) FROM matomo_log_link_visit_action link_action JOIN matomo_log_action action_name ON action_name.idaction=link_action.idaction_name WHERE action_name.name='$title'"
 }
 test "$(event_count)" -ge 1
+archive_user=$(awk '!/^([[:space:]]*#|[[:space:]]*$)/ { print $6; exit }' \
+    /etc/cron.d/matomo-archive)
+archive_command=$(cut -d ' ' -f 7- /etc/cron.d/matomo-archive)
+test "$archive_user" = www-data
+test -n "$archive_command"
+runuser -u "$archive_user" -- /bin/sh -c "$archive_command"
+curl --insecure --fail --silent --show-error --get \
+    --cookie-jar "$cookies" --cookie "$cookies" \
+    --data-urlencode module=API \
+    --data-urlencode method=Actions.getPageTitles \
+    --data-urlencode idSite=1 \
+    --data-urlencode period=day \
+    --data-urlencode date=today \
+    --data-urlencode format=json \
+    "$base/index.php" >"$report"
+python3 - "$report" "$title" <<'PY'
+import json
+import sys
+
+report = json.load(open(sys.argv[1], encoding="utf-8"))
+title = sys.argv[2]
+
+def contains_title(value):
+    if isinstance(value, dict):
+        return value.get("label") == title or any(contains_title(item) for item in value.values())
+    if isinstance(value, list):
+        return any(contains_title(item) for item in value)
+    return False
+
+if not contains_title(report):
+    raise SystemExit(f"tracked title absent from Matomo report: {report!r}")
+PY
 systemctl restart mariadb.service apache2.service
 test "$(event_count)" -ge 1
 curl --insecure --fail --silent --show-error --location \
@@ -117,7 +151,7 @@ grep -Rqs '^Suites: trixie' /etc/apt/sources.list.d
 cat >"$result" <<EOF
 package_source=Official Matomo $installed_version GitHub release archive, SHA-256 $asset_digest; PHP, MariaDB, Apache, Postfix and Adminer from Debian Trixie
 installed_version=Matomo $installed_version; $php_version
-runtime_checks=normal init and firstboot; real Matomo administrator login; tracking event submission and direct analytics-table readback; MariaDB and Apache restart persistence; loopback Postfix; Adminer and Webmin HTTPS endpoints
+runtime_checks=normal init and firstboot; real Matomo administrator login; tracking event submission, scheduled CLI archiving and authenticated Reporting API visibility; direct analytics-table persistence across MariaDB and Apache restart; loopback Postfix; Adminer and Webmin HTTPS endpoints
 updater_command=official GitHub latest-release query followed by the documented supervised archive replacement and php console core:update --yes
 updater_result=official stable channel reported Matomo $latest_version, matching the installed release; no application files changed
 updater_channel=https://github.com/matomo-org/matomo/releases and the official Matomo manual update guide; Debian and TurnKey Trixie APT repositories
