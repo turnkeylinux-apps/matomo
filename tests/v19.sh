@@ -92,6 +92,7 @@ curl --insecure --fail --silent --show-error --get \
     --data-urlencode period=day \
     --data-urlencode date=today \
     --data-urlencode format=json \
+    --data-urlencode force_api_session=1 \
     "$base/index.php" >"$report"
 python3 - "$report" "$title" <<'PY'
 import json
