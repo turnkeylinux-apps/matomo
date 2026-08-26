@@ -60,6 +60,10 @@ curl --insecure --fail --silent --show-error --location \
     "$base/index.php" >"$page"
 grep -Fq 'piwik.userLogin = "admin";' "$page"
 grep -Fq 'title="Sign out"' "$page"
+session_token=$(sed -n \
+    's/.*piwik\.token_auth = "\([^"]*\)";.*/\1/p' "$page" |
+    head -n1)
+test -n "$session_token"
 
 # Submit an identity-defining analytics event through Matomo's tracker, run
 # the scheduled archiver as its configured user, and require the resulting
@@ -84,7 +88,7 @@ archive_command=$(cut -d ' ' -f 7- /etc/cron.d/matomo-archive)
 test "$archive_user" = www-data
 test -n "$archive_command"
 runuser -u "$archive_user" -- /bin/sh -c "$archive_command"
-curl --insecure --fail --silent --show-error --get \
+curl --insecure --fail --silent --show-error \
     --cookie-jar "$cookies" --cookie "$cookies" \
     --data-urlencode module=API \
     --data-urlencode method=Actions.getPageTitles \
@@ -92,6 +96,7 @@ curl --insecure --fail --silent --show-error --get \
     --data-urlencode period=day \
     --data-urlencode date=today \
     --data-urlencode format=json \
+    --data-urlencode "token_auth=$session_token" \
     --data-urlencode force_api_session=1 \
     "$base/index.php" >"$report"
 python3 - "$report" "$title" <<'PY'
