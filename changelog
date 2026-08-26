@@ -1,10 +1,7 @@
 turnkey-matomo-19.0 (1) turnkey; urgency=low
 
-  * Install the supported Matomo 5.13.0 release from the official upstream
-    archive and verify its published SHA-256 digest during the build.
-
-  * Replace the retired Matomo Debian repository with the supervised upstream
-    archive update path.
+  * Install Matomo from Debian's signed Trixie package repository and use APT
+    for supervised updates.
 
   * Update the installer integration and PHP dependencies for Debian 13
     Trixie.

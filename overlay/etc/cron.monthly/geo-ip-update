@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DIR=/var/www/matomo/misc
+DIR=/usr/share/matomo/misc
 
 dl_url=$(/usr/bin/curl -L https://db-ip.com/db/download/ip-to-city-lite 2>/dev/null \
 	| /usr/bin/sed -En '\|dbip-city-lite-[0-9-]+.mmdb.gz| s|.*(https:[a-z0-9\./-]+).*|\1|p')

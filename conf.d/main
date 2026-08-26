@@ -8,16 +8,7 @@ ADMIN_NAME=admin
 ADMIN_PASS=turnkey-build-pass
 ADMIN_MAIL=admin@example.com
 
-WEBROOT=/var/www/matomo
-MATOMO_VERSION=5.13.0
-MATOMO_ARCHIVE="matomo-${MATOMO_VERSION}.zip"
-MATOMO_URL="https://github.com/matomo-org/matomo/releases/download/${MATOMO_VERSION}/${MATOMO_ARCHIVE}"
-MATOMO_SHA256=52dc5f3c131ff9a1e194488acaefd08129f99b700e8d83dab20e5728ebae4c90
-
-cd /var/www
-echo "$MATOMO_SHA256  $MATOMO_ARCHIVE" | sha256sum -c -
-unzip "$MATOMO_ARCHIVE"
-rm "$MATOMO_ARCHIVE"
+WEBROOT=/usr/share/matomo
 
 # configure apache
 a2dissite 000-default
@@ -37,10 +28,6 @@ MYSQL_BATCH="mariadb --batch --execute"
 
 # tweak mod_evasive to ensure that Matomo admin page(s) are accessible by default
 sed -i '\|DOSPageCount| s|#||; \|DOSPageCount| s|[0-9]*$|5|' /etc/apache2/mods-available/evasive.conf
-
-chown -R www-data:www-data /var/www/matomo
-find /var/www/matomo/tmp -type f -exec chmod 644 {} \;
-find /var/www/matomo/tmp -type d -exec chmod 755 {} \;
 
 mariadb --batch <<EOF
 CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -86,7 +73,7 @@ CURL=(curl --fail --silent --show-error -c /tmp/cookie -b /tmp/cookie)
 rm -f /tmp/cookie
 
 # configure mail and secure configuration file
-CONF=/var/www/matomo/config/config.ini.php
+CONF=$WEBROOT/config/config.ini.php
 runuser -u www-data -- php "$WEBROOT/console" config:set \
     'General.enable_trusted_host_check=0' \
     'General.force_ssl=1' \
@@ -95,16 +82,10 @@ runuser -u www-data -- php "$WEBROOT/console" config:set \
 
 chmod 640 $CONF
 
-test "$(runuser -u www-data -- php "$WEBROOT/console" core:version)" = "$MATOMO_VERSION"
+MATOMO_VERSION=$(runuser -u www-data -- php "$WEBROOT/console" core:version)
+MATOMO_PACKAGE_VERSION=$(dpkg-query -W -f='${Version}' matomo)
+test "${MATOMO_PACKAGE_VERSION%%+dfsg-*}" = "$MATOMO_VERSION"
 test "$($MYSQL_BATCH "SELECT COUNT(*) FROM matomo.matomo_user WHERE login='admin' AND superuser_access=1" --skip-column-names)" = 1
-
-install -d /usr/local/share
-cat > /usr/local/share/matomo-release <<EOF
-MATOMO_VERSION=$MATOMO_VERSION
-MATOMO_ARCHIVE=$MATOMO_ARCHIVE
-MATOMO_URL=$MATOMO_URL
-MATOMO_SHA256=$MATOMO_SHA256
-EOF
 
 # disable browser based cron - not required when cron job enabled
 $MYSQL_BATCH "INSERT INTO matomo.matomo_option (option_name,option_value,autoload) values ('enableBrowserTriggerArchiving',0,1)";

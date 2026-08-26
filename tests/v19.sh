@@ -8,11 +8,11 @@ base=https://localhost
 cookies=/tmp/tkl-matomo-cookies.$$
 page=/tmp/tkl-matomo-page.$$
 headers=/tmp/tkl-matomo-headers.$$
-release=/tmp/tkl-matomo-release.$$
+apt_simulation=/tmp/tkl-matomo-apt-simulation.$$
 report=/tmp/tkl-matomo-report.$$
 
 cleanup() {
-    rm -f -- "$cookies" "$page" "$headers" "$release" "$report"
+    rm -f -- "$cookies" "$page" "$headers" "$apt_simulation" "$report"
 }
 trap cleanup EXIT
 trap 'printf "test_failure line=%s status=%s command=%q\n" "$LINENO" "$?" "$BASH_COMMAND" >&2' ERR
@@ -26,8 +26,10 @@ grep -Eq '^turnkey-matomo-19\.0' /etc/turnkey_version
 grep -Fq '[40matomo] successfully completed' /var/log/inithooks.log
 
 installed_version=$(runuser -u www-data -- \
-    php /var/www/matomo/console core:version)
-test "$installed_version" = 5.13.0
+    php /usr/share/matomo/console core:version)
+package_version=$(dpkg-query -W -f='${Version}' matomo)
+test "${package_version%%+dfsg-*}" = "$installed_version"
+test "$(dpkg-query -W -f='${Status}' matomo)" = 'install ok installed'
 php_version=$(php --version | head -n1)
 [[ $php_version == 'PHP 8.4.'* ]]
 for module in curl gd intl mbstring mysqli xml zip; do
@@ -130,36 +132,21 @@ curl --insecure --fail --silent --show-error \
     https://127.0.0.1:12322/ >"$page"
 grep -qi Adminer "$page"
 
-# Query the official stable channel without mutating the installation, and
-# match its asset digest to the value verified during the appliance build.
-curl --fail --silent --show-error \
-    https://api.github.com/repos/matomo-org/matomo/releases/latest >"$release"
-read -r latest_version asset_digest < <(python3 - "$release" <<'PY'
-import json
-import sys
-
-release = json.load(open(sys.argv[1], encoding="utf-8"))
-version = release["tag_name"]
-asset = next(item for item in release["assets"]
-             if item["name"] == f"matomo-{version}.zip")
-print(version, asset["digest"].removeprefix("sha256:"))
-PY
-)
-test "$latest_version" = "$installed_version"
-. /usr/local/share/matomo-release
-test "$MATOMO_VERSION" = "$installed_version"
-test "$MATOMO_SHA256" = "$asset_digest"
-test "$MATOMO_URL" = \
-    "https://github.com/matomo-org/matomo/releases/download/$installed_version/matomo-$installed_version.zip"
+# Prove that the installed package is current in the signed Trixie channel and
+# that the normal APT update transaction resolves without mutating the system.
+candidate_version=$(apt-cache policy matomo | awk '/Candidate:/ { print $2; exit }')
+test "$candidate_version" = "$package_version"
+apt-get --simulate install matomo >"$apt_simulation"
+grep -Fq 'matomo is already the newest version' "$apt_simulation"
 grep -Rqs '^Suites: trixie' /etc/apt/sources.list.d
 ! grep -Rqi bookworm /etc/apt/sources.list.d
 
 cat >"$result" <<EOF
-package_source=Official Matomo $installed_version GitHub release archive, SHA-256 $asset_digest; PHP, MariaDB, Apache, Postfix and Adminer from Debian Trixie
-installed_version=Matomo $installed_version; $php_version
+package_source=Matomo and its PHP dependencies from the signed Debian Trixie repository
+installed_version=Matomo $installed_version, Debian package $package_version; $php_version
 runtime_checks=normal init and firstboot; real Matomo administrator login; tracking event submission, scheduled CLI archiving and authenticated Reporting API visibility; direct analytics-table persistence across MariaDB and Apache restart; loopback Postfix; Adminer and Webmin HTTPS endpoints
-updater_command=official GitHub latest-release query followed by the documented supervised archive replacement and php console core:update --yes
-updater_result=official stable channel reported Matomo $latest_version, matching the installed release; no application files changed
-updater_channel=https://github.com/matomo-org/matomo/releases and the official Matomo manual update guide; Debian and TurnKey Trixie APT repositories
-integrity_evidence=build verifies the SHA-256 published in official GitHub release metadata; the retained release marker matches that metadata; no Bookworm source remained
+updater_command=apt-get --simulate install matomo
+updater_result=the signed Trixie candidate $candidate_version matches the installed package and the simulated transaction reports it current
+updater_channel=Debian and TurnKey Trixie APT repositories
+integrity_evidence=dpkg reports matomo installed successfully from the signed Trixie channel; installed and candidate versions match; no Bookworm source remained
 EOF
