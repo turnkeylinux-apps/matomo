@@ -114,7 +114,10 @@ title = sys.argv[2]
 
 def contains_title(value):
     if isinstance(value, dict):
-        return value.get("label") == title or any(contains_title(item) for item in value.values())
+        label = value.get("label")
+        return (
+            isinstance(label, str) and label.strip() == title
+        ) or any(contains_title(item) for item in value.values())
     if isinstance(value, list):
         return any(contains_title(item) for item in value)
     return False
