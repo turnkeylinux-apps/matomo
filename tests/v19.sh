@@ -141,7 +141,8 @@ grep -qi Adminer "$page"
 
 # Prove that the installed package is current in the signed Trixie channel and
 # that the normal APT update transaction resolves without mutating the system.
-candidate_version=$(apt-cache policy matomo | awk '/Candidate:/ { print $2; exit }')
+candidate_version=$(apt-cache policy matomo |
+    awk '/Candidate:/ && !candidate { candidate=$2 } END { print candidate }')
 test "$candidate_version" = "$package_version"
 apt-get --simulate install matomo >"$apt_simulation"
 grep -Fq 'matomo is already the newest version' "$apt_simulation"
