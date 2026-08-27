@@ -11,6 +11,12 @@ ADMIN_MAIL=admin@example.com
 WEBROOT=/usr/share/matomo
 GEOIP2_RUNTIME=/usr/local/share/matomo-geoip2
 
+# Debian serves Matomo from public/, but Matomo's asynchronous CLI archiver
+# still loads the upstream root entry point when it processes queued reports.
+if [ ! -e "$WEBROOT/index.php" ]; then
+    ln -s public/index.php "$WEBROOT/index.php"
+fi
+
 COMPOSER_ALLOW_SUPERUSER=1 composer install \
     --working-dir="$GEOIP2_RUNTIME" \
     --no-dev \

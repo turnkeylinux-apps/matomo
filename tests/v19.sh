@@ -33,6 +33,7 @@ installed_version=$(runuser -u www-data -- \
 package_version=$(dpkg-query -W -f='${Version}' matomo)
 test "${package_version%%+dfsg-*}" = "$installed_version"
 test "$(dpkg-query -W -f='${Status}' matomo)" = 'install ok installed'
+test "$(readlink /usr/share/matomo/index.php)" = public/index.php
 php_version=$(php --version | head -n1)
 [[ $php_version == 'PHP 8.4.'* ]]
 for module in curl gd intl mbstring mysqli xml zip; do
