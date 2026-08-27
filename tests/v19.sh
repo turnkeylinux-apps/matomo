@@ -9,10 +9,13 @@ cookies=/tmp/tkl-matomo-cookies.$$
 page=/tmp/tkl-matomo-page.$$
 headers=/tmp/tkl-matomo-headers.$$
 apt_simulation=/tmp/tkl-matomo-apt-simulation.$$
+composer_dry_run=/tmp/tkl-matomo-composer-dry-run.$$
+composer_audit=/tmp/tkl-matomo-composer-audit.$$
 report=/tmp/tkl-matomo-report.$$
 
 cleanup() {
-    rm -f -- "$cookies" "$page" "$headers" "$apt_simulation" "$report"
+    rm -f -- "$cookies" "$page" "$headers" "$apt_simulation" \
+        "$composer_dry_run" "$composer_audit" "$report"
 }
 trap cleanup EXIT
 trap 'printf "test_failure line=%s status=%s command=%q\n" "$LINENO" "$?" "$BASH_COMMAND" >&2' ERR
@@ -141,12 +144,48 @@ grep -Fq 'matomo is already the newest version' "$apt_simulation"
 grep -Rqs '^Suites: trixie' /etc/apt/sources.list.d
 ! grep -Rqi bookworm /etc/apt/sources.list.d
 
+# The optional GeoIP2 provider comes from its maintained upstream Composer
+# channel because Trixie does not package its PHP API. Prove that the installed
+# library matches the committed lock and that its non-mutating maintenance
+# checks are clean.
+geoip_runtime=/usr/local/share/matomo-geoip2
+locked_geoip_version=$(php -r '
+$lock = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
+foreach ($lock["packages"] as $package) {
+    if ($package["name"] === "geoip2/geoip2") {
+        echo $package["version"];
+        exit;
+    }
+}
+exit(1);
+' "$geoip_runtime/composer.lock")
+installed_geoip_version=$(php -r '
+$installed = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
+foreach ($installed["packages"] ?? $installed as $package) {
+    if ($package["name"] === "geoip2/geoip2") {
+        echo $package["version"];
+        exit;
+    }
+}
+exit(1);
+' "$geoip_runtime/vendor/composer/installed.json")
+test -n "$locked_geoip_version"
+test "$installed_geoip_version" = "$locked_geoip_version"
+COMPOSER_ALLOW_SUPERUSER=1 composer validate \
+    --working-dir="$geoip_runtime" --strict --no-check-publish
+COMPOSER_ALLOW_SUPERUSER=1 composer install \
+    --working-dir="$geoip_runtime" --dry-run --no-dev --no-interaction \
+    --no-plugins --no-progress --no-scripts >"$composer_dry_run" 2>&1
+grep -Fq 'Nothing to install, update or remove' "$composer_dry_run"
+COMPOSER_ALLOW_SUPERUSER=1 composer audit \
+    --working-dir="$geoip_runtime" --locked --no-dev >"$composer_audit" 2>&1
+
 cat >"$result" <<EOF
-package_source=Matomo and its PHP dependencies from the signed Debian Trixie repository
-installed_version=Matomo $installed_version, Debian package $package_version; $php_version
+package_source=Matomo and its PHP dependencies from the signed Debian Trixie repository; optional GeoIP2 PHP API from its locked upstream Composer release
+installed_version=Matomo $installed_version, Debian package $package_version; GeoIP2 PHP API $installed_geoip_version from the locked upstream Composer install; $php_version
 runtime_checks=normal init and firstboot; real Matomo administrator login; tracking event submission, scheduled CLI archiving and authenticated Reporting API visibility; direct analytics-table persistence across MariaDB and Apache restart; loopback Postfix; Adminer and Webmin HTTPS endpoints
-updater_command=apt-get --simulate install matomo
-updater_result=the signed Trixie candidate $candidate_version matches the installed package and the simulated transaction reports it current
-updater_channel=Debian and TurnKey Trixie APT repositories
-integrity_evidence=dpkg reports matomo installed successfully from the signed Trixie channel; installed and candidate versions match; no Bookworm source remained
+updater_command=apt-get --simulate install matomo; composer validate, install --dry-run and audit --locked in $geoip_runtime
+updater_result=the signed Trixie candidate $candidate_version matches the installed Matomo package; GeoIP2 $installed_geoip_version matches its lock, the Composer dry-run is unchanged and the locked audit passes
+updater_channel=Debian and TurnKey Trixie APT repositories; upstream GeoIP2 Composer channel through Packagist and GitHub
+integrity_evidence=dpkg reports matomo installed successfully from the signed Trixie channel; installed and candidate versions match; no Bookworm source remained; Composer metadata validates and the installed GeoIP2 version matches the committed lock
 EOF
