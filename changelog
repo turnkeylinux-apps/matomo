@@ -6,8 +6,11 @@ turnkey-matomo-19.0 (1) turnkey; urgency=low
   * Update the installer integration and PHP dependencies for Debian 13
     Trixie.
 
+  * Supply the upstream GeoIP2 PHP API through Composer because Debian's
+    Matomo package omits this optional geographic-reporting dependency.
+
   * Verify firstboot administrator authentication, analytics collection and
-    persistence, and current upstream release discovery.
+    persistence, geographic report archiving, and signed updater evidence.
 
  -- TurnKey GNU/Linux Team <admin@turnkeylinux.org>  Tue, 25 Aug 2026 00:00:00 +0000
 

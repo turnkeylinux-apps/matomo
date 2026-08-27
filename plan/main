@@ -2,6 +2,7 @@
 #include <turnkey/lamp>
 
 matomo
+composer
 
 php-gd
 php-cli

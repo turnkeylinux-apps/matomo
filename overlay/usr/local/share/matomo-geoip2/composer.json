@@ -1,0 +1,12 @@
+{
+    "name": "turnkeylinux/matomo-geoip2-runtime",
+    "description": "GeoIP2 runtime dependencies for the TurnKey Matomo appliance",
+    "license": "GPL-3.0-or-later",
+    "require": {
+        "geoip2/geoip2": "^3.4"
+    },
+    "config": {
+        "allow-plugins": {},
+        "sort-packages": true
+    }
+}

@@ -9,6 +9,21 @@ ADMIN_PASS=turnkey-build-pass
 ADMIN_MAIL=admin@example.com
 
 WEBROOT=/usr/share/matomo
+GEOIP2_RUNTIME=/usr/local/share/matomo-geoip2
+
+COMPOSER_ALLOW_SUPERUSER=1 composer install \
+    --working-dir="$GEOIP2_RUNTIME" \
+    --no-dev \
+    --no-interaction \
+    --no-plugins \
+    --no-progress \
+    --no-scripts \
+    --optimize-autoloader \
+    --prefer-dist
+phpenmod matomo-geoip2
+runuser -u www-data -- php -r \
+    'require "/usr/local/share/matomo-geoip2/vendor/autoload.php";
+    exit(class_exists("GeoIp2\\Database\\Reader") ? 0 : 1);'
 
 # configure apache
 a2dissite 000-default
