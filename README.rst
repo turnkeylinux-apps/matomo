@@ -12,9 +12,12 @@ This appliance includes all the standard features in `TurnKey Core`_,
 and on top of that:
 
 - Matomo configurations:
-   
-   - Installed from official Matomo debian package archive (to 
-     /usr/share/matomo)
+
+   - Matomo is installed from Debian's signed Trixie package repository to
+     ``/usr/share/matomo``.
+
+   - Geographic reports use the upstream GeoIP2 PHP API and the automatically
+     refreshed DB-IP Lite database.
 
      **Security note**: Updates to Matomo may require supervision
      so they **ARE NOT** configured to install automatically. See
@@ -30,10 +33,18 @@ and on top of that:
 Supervised Manual Matomo Update
 -------------------------------
 
-To upgrade to the latest version of Matomo from the command line::
+Back up Matomo and its database, then refresh the signed package metadata and
+install the current Trixie package::
 
     apt-get update
     apt-get install matomo
+
+The optional GeoIP2 PHP API is maintained through Composer. Review its release
+notes, then update it and its locked dependencies with::
+
+    COMPOSER_ALLOW_SUPERUSER=1 composer update \
+        --working-dir=/usr/local/share/matomo-geoip2 \
+        geoip2/geoip2 --with-all-dependencies
 
 We recommend subscribing to the `Matomo changelog`_ to be notified 
 about new versions and security updates. 
@@ -49,4 +60,3 @@ Credentials *(passwords set at first boot)*
 .. _TurnKey Core: https://www.turnkeylinux.org/core
 .. _Adminer: https://www.adminer.org/
 .. _Matomo changelog: https://matomo.org/changelog/
-

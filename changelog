@@ -1,3 +1,19 @@
+turnkey-matomo-19.0 (1) turnkey; urgency=low
+
+  * Install Matomo from Debian's signed Trixie package repository and use APT
+    for supervised updates.
+
+  * Update the installer integration and PHP dependencies for Debian 13
+    Trixie.
+
+  * Supply the upstream GeoIP2 PHP API through Composer because Debian's
+    Matomo package omits this optional geographic-reporting dependency.
+
+  * Verify firstboot administrator authentication, analytics collection and
+    persistence, geographic report archiving, and signed updater evidence.
+
+ -- TurnKey GNU/Linux Team <admin@turnkeylinux.org>  Tue, 25 Aug 2026 00:00:00 +0000
+
 turnkey-matomo-18.0 (1) turnkey; urgency=low
 
   * Install latest Matomo stable - v4.15.1.
@@ -284,4 +300,3 @@ turnkey-piwik-12.0 (1) turnkey; urgency=low
     appliances. Here we only describe changes specific to this appliance.
 
  -- Alon Swartz <alon@turnkeylinux.org>  Wed, 01 Aug 2012 08:00:00 +0200
-

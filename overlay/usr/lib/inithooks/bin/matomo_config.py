@@ -24,7 +24,7 @@ def usage(e=None):
     sys.exit(1)
 
 def update(section, name, value):
-    config_path = "/var/www/matomo/config/config.ini.php"
+    config_path = "/usr/share/matomo/config/config.ini.php"
     if not os.path.exists(config_path):
         raise Error(f"config file does not exist: {config_path}")
 

@@ -5,13 +5,31 @@ DB_USER=matomo
 DB_PASS=$(mcookie)
 
 ADMIN_NAME=admin
-ADMIN_PASS=turnkey
+ADMIN_PASS=turnkey-build-pass
 ADMIN_MAIL=admin@example.com
 
-WEBROOT=/var/www/matomo
+WEBROOT=/usr/share/matomo
+GEOIP2_RUNTIME=/usr/local/share/matomo-geoip2
 
-cd /var/www
-unzip matomo-latest.zip
+# Debian serves Matomo from public/, but Matomo's asynchronous CLI archiver
+# still loads the upstream root entry point when it processes queued reports.
+if [ ! -e "$WEBROOT/index.php" ]; then
+    ln -s public/index.php "$WEBROOT/index.php"
+fi
+
+COMPOSER_ALLOW_SUPERUSER=1 composer install \
+    --working-dir="$GEOIP2_RUNTIME" \
+    --no-dev \
+    --no-interaction \
+    --no-plugins \
+    --no-progress \
+    --no-scripts \
+    --optimize-autoloader \
+    --prefer-dist
+phpenmod matomo-geoip2
+runuser -u www-data -- php -r \
+    'require "/usr/local/share/matomo-geoip2/vendor/autoload.php";
+    exit(class_exists("GeoIp2\\Database\\Reader") ? 0 : 1);'
 
 # configure apache
 a2dissite 000-default
@@ -20,11 +38,11 @@ a2ensite matomo
 a2enmod rewrite
 
 # start services
-service mysql start
+service mariadb start
 service apache2 start
 
 # setup the database
-MYSQL_BATCH="mysql --batch --execute"
+MYSQL_BATCH="mariadb --batch --execute"
 
 # hit cron job to download geoIP db
 /etc/cron.monthly/geo-ip-update
@@ -32,51 +50,63 @@ MYSQL_BATCH="mysql --batch --execute"
 # tweak mod_evasive to ensure that Matomo admin page(s) are accessible by default
 sed -i '\|DOSPageCount| s|#||; \|DOSPageCount| s|[0-9]*$|5|' /etc/apache2/mods-available/evasive.conf
 
-chown -R www-data:www-data /var/www/matomo
-find /var/www/matomo/tmp -type f -exec chmod 644 {} \;
-find /var/www/matomo/tmp -type d -exec chmod 755 {} \;
-
-mysqladmin create $DB_NAME
-$MYSQL_BATCH "grant all privileges on $DB_NAME.* to $DB_USER@localhost identified by '$DB_PASS'; flush privileges;"
+mariadb --batch <<EOF
+CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';
+GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';
+FLUSH PRIVILEGES;
+EOF
 
 # curl based install
-EMAIL=$(echo $ADMIN_MAIL | sed s/@/%40/)
 URL="http://127.0.0.1/index.php?module=Installation&action="
-CURL="curl -c /tmp/cookie -b /tmp/cookie"
+CURL=(curl --fail --silent --show-error -c /tmp/cookie -b /tmp/cookie)
 
-$CURL ${URL}systemCheck
-$CURL ${URL}databaseSetup
-$CURL ${URL}databaseSetup --data "host=127.0.0.1&username=$DB_USER&password=$DB_PASS&dbname=$DB_NAME&tables_prefix=matomo_&adapter=PDO\\MYSQL&submit=Next+%C2%BB"
-$CURL ${URL}databaseCheck
-$CURL ${URL}tablesCreation
-$CURL ${URL}setupSuperUser
-$CURL ${URL}setupSuperUser --data "login=$ADMIN_NAME&password=$ADMIN_PASS&password_bis=$ADMIN_PASS&email=$EMAIL&submit=Next+%C2%BB"
-$CURL ${URL}firstWebsiteSetup
-$CURL ${URL}firstWebsiteSetup --data "siteName=Example&url=http%3A%2F%2Fexample.org&timezone=UTC&ecommerce=0&submit=Next+%C2%BB"
-$CURL ${URL}trackingCode
-$CURL ${URL}trackingCode --data "site_idSite=1&site_name=Example"
-$CURL ${URL}finished
-$CURL ${URL}finished --data "site_idSite=1&site_name=Example"
+"${CURL[@]}" "${URL}systemCheck"
+"${CURL[@]}" "${URL}databaseSetup"
+"${CURL[@]}" "${URL}databaseSetup" \
+    --data-urlencode "host=127.0.0.1" \
+    --data-urlencode "username=$DB_USER" \
+    --data-urlencode "password=$DB_PASS" \
+    --data-urlencode "dbname=$DB_NAME" \
+    --data-urlencode "tables_prefix=matomo_" \
+    --data-urlencode 'adapter=PDO\MYSQL' \
+    --data-urlencode 'submit=Next »'
+"${CURL[@]}" "${URL}databaseCheck"
+"${CURL[@]}" "${URL}tablesCreation"
+"${CURL[@]}" "${URL}setupSuperUser"
+"${CURL[@]}" "${URL}setupSuperUser" \
+    --data-urlencode "login=$ADMIN_NAME" \
+    --data-urlencode "password=$ADMIN_PASS" \
+    --data-urlencode "password_bis=$ADMIN_PASS" \
+    --data-urlencode "email=$ADMIN_MAIL" \
+    --data-urlencode 'submit=Next »'
+"${CURL[@]}" "${URL}firstWebsiteSetup"
+"${CURL[@]}" "${URL}firstWebsiteSetup" \
+    --data-urlencode 'siteName=Example' \
+    --data-urlencode 'url=http://example.org' \
+    --data-urlencode 'timezone=UTC' \
+    --data-urlencode 'ecommerce=0' \
+    --data-urlencode 'submit=Next »'
+"${CURL[@]}" "${URL}finished"
+"${CURL[@]}" "${URL}finished" \
+    --data-urlencode 'site_idSite=1' --data-urlencode 'site_name=Example'
 
 rm -f /tmp/cookie
 
 # configure mail and secure configuration file
-CONF=/var/www/matomo/config/config.ini.php
-
-sed -i '/^\[General\]$/a \
-enable_trusted_host_check = 0' $CONF
-
-sed -i '/^\[General\]$/a \
-force_ssl = 1' $CONF
-
-
-cat >> $CONF << EOF
-[mail]
-transport = "smtp"
-host = "localhost"
-EOF
+CONF=$WEBROOT/config/config.ini.php
+runuser -u www-data -- php "$WEBROOT/console" config:set \
+    'General.enable_trusted_host_check=0' \
+    'General.force_ssl=1' \
+    'mail.transport="smtp"' \
+    'mail.host="localhost"'
 
 chmod 640 $CONF
+
+MATOMO_VERSION=$(runuser -u www-data -- php "$WEBROOT/console" core:version)
+MATOMO_PACKAGE_VERSION=$(dpkg-query -W -f='${Version}' matomo)
+test "${MATOMO_PACKAGE_VERSION%%+dfsg-*}" = "$MATOMO_VERSION"
+test "$($MYSQL_BATCH "SELECT COUNT(*) FROM matomo.matomo_user WHERE login='admin' AND superuser_access=1" --skip-column-names)" = 1
 
 # disable browser based cron - not required when cron job enabled
 $MYSQL_BATCH "INSERT INTO matomo.matomo_option (option_name,option_value,autoload) values ('enableBrowserTriggerArchiving',0,1)";
@@ -89,5 +119,5 @@ mkdir -p /var/log/matomo
 chown www-data:www-data /var/log/matomo
 
 # stop services
-service mysql stop
+service mariadb stop
 service apache2 stop
